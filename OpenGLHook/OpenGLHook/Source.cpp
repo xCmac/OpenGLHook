@@ -22,9 +22,32 @@ glEnableType hookedGlEnable = NULL;
 
 bool toggle = false;
 
+
+
+void *DetourFunc(BYTE *src, const BYTE *dst, const int len)
+{
+	BYTE *jmp = (BYTE*)malloc(len + 5);
+	DWORD dwback;
+	VirtualProtect(src, len, PAGE_READWRITE, &dwback);
+	memcpy(jmp, src, len);
+	jmp += len;
+	jmp[0] = 0xE9;
+	*(DWORD*)(jmp + 1) = (DWORD)(src + len - jmp) - 5;
+	src[0] = 0xE9;
+	*(DWORD*)(src + 1) = (DWORD)(dst - src) - 5;
+	VirtualProtect(src, len, dwback, &dwback);
+	return (jmp - len);
+}
+
 void HookOpenGL()
 {
 	HMODULE openGLModule = GetModuleHandle("opengl32.dll");
+	hookedglVertex3fv = (glVertex3fvType)DetourFunc((LPBYTE)GetProcAddress(openGLModule, "glVertex3fv"), (LPBYTE)&Hooked_glVertex3fv, 6);
+	hookedglVertex3f = (glVertex3fType)DetourFunc((LPBYTE)GetProcAddress(openGLModule, "glVertex3f"), (LPBYTE)&Hooked_glVertex3f, 6);
+	hookedglBegin = (glBeginType)DetourFunc((LPBYTE)GetProcAddress(openGLModule, "glBegin"), (LPBYTE)&Hooked_glBegin, 6);
+	hookedglEnd = (glEndType)DetourFunc((LPBYTE)GetProcAddress(openGLModule, "glEnd"), (LPBYTE)&Hooked_glEnd, 6);
+	hookedglClear = (glClearType)DetourFunc((LPBYTE)GetProcAddress(openGLModule, "glClear"), (LPBYTE)&Hooked_glClear, 7);
+	hookedGlEnable = (glEnableType)DetourFunc((LPBYTE)GetProcAddress(openGLModule, "glEnable"), (LPBYTE)&Hooked_glEnable, 6);
 }
 
 DWORD WINAPI HookThread(LPVOID)
