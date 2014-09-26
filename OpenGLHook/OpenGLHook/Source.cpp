@@ -20,10 +20,11 @@ glVertex3fvType hookedglVertex3fv = NULL;
 glVertex3fType hookedglVertex3f = NULL;
 glEnableType hookedGlEnable = NULL;
 
+bool toggle = false;
 
 void HookOpenGL()
 {
-
+	HMODULE openGLModule = GetModuleHandle("opengl32.dll");
 }
 
 DWORD WINAPI HookThread(LPVOID)
