@@ -1,3 +1,6 @@
+#pragma comment(lib,"OpenGL32.lib")
+#pragma comment(lib,"GLu32.lib")
+
 #include <windows.h>
 #include <gl\gl.h>
 #include <gl\glu.h>
@@ -5,6 +8,8 @@
 #include <stdio.h>
 #include <tlhelp32.h>
 #include <iostream>
+
+
 
 typedef void (APIENTRY *glBeginType)(GLenum);
 typedef void (APIENTRY *glEndType)(void);
@@ -22,7 +27,69 @@ glEnableType hookedGlEnable = NULL;
 
 bool toggle = false;
 
+void DrawBox(GLfloat x, GLfloat y, GLfloat z, GLfloat width, GLfloat height)
+{
+	glBegin(GL_QUADS);
+	glVertex3f(x, y, z);
+	glVertex3f(x + width, y, z);
+	glVertex3f(x + width, y + height, z);
+	glVertex3f(x, y + height, z);
+	glEnd();
+}
 
+void APIENTRY Hooked_glBegin(GLenum mode)
+{
+	if (GetAsyncKeyState(VK_F1) & 1) { toggle = !toggle; }
+
+	if (toggle)
+	{
+		if (mode == GL_TRIANGLES || mode == GL_TRIANGLE_STRIP || mode == GL_TRIANGLE_FAN)
+		{
+			glDepthRange(0, 0.5);
+		}
+		else
+		{
+			glDepthRange(0.5, 1);
+		}
+	}
+
+	if (hookedglBegin)
+	{
+		(*hookedglBegin)(mode);
+	}
+
+}
+
+void APIENTRY Hooked_glEnd(void)
+{
+	(*hookedglEnd)();
+}
+
+void APIENTRY Hooked_glVertex3fv(GLfloat *v)
+{
+	(*hookedglVertex3fv)(v);
+}
+
+
+void APIENTRY Hooked_glVertex3f(GLfloat x, GLfloat y, GLfloat z)
+{
+	(*hookedglVertex3f)(x, y, z);
+}
+
+void APIENTRY Hooked_glClear(GLbitfield mask)
+{
+	(*hookedGlEnable)(mask);
+}
+
+void APIENTRY Hooked_glEnable(GLenum cap)
+{
+	if (GetAsyncKeyState(VK_F2))
+	{
+		DrawBox(200, 100, 0, 50, 30);
+	}
+
+	(*hookedGlEnable)(cap);
+}
 
 void *DetourFunc(BYTE *src, const BYTE *dst, const int len)
 {
